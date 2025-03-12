@@ -56,10 +56,10 @@ db.songs.insert_many(songs_list)
 def parse_json(data):
     return json.loads(json_util.dumps(data))
 
-######################################################################
-# INSERT CODE HERE
-######################################################################
 
+#######################################################################
+# Ex1: Implementing /health and /count 
+#######################################################################
 # to implement /health endpoint
 @app.route("/health", methods=["GET"] )
 def health():
@@ -73,7 +73,9 @@ def getCount():
     return {"count": int(docCount)}, 200
 
 
+#######################################################################
 # Ex2: Return all songs in collection
+#######################################################################
 @app.route("/song",methods=["GET"])
 def songs():
     results=db.songs.find({})
@@ -83,7 +85,10 @@ def songs():
 
     return json_util.dumps(dbSongs), 200
 
-# Ex3: get individual song
+
+#######################################################################
+# Ex3: Get a song
+#######################################################################
 @app.route("/song/<int:id>", methods=["GET"])
 def get_song_by_id(id):
     result=db.songs.find_one({"id":id})
@@ -93,24 +98,82 @@ def get_song_by_id(id):
     
     return (parse_json(result), 200)
 
-# Ex4: create a song
+
+#######################################################################
+# Ex4: Create a song
+#######################################################################
 @app.route("/song/", methods=["POST"])
 def create_song():
-
+    
     # get and check for json input in HTTP header
     inputData=request.get_json()
     if not inputData:
         return ({"message": "Missing or invalid JSON input"}, 422)
-
-    song=db.songs.find_one({"id":inputData['id']} )
-
-    #song exists in DB 
-    if result ==1:
-        return {"message":f"song with id {song['id']} already present"}, 302
     
+    song=db.songs.find_one({"id":inputData['id']} )
+    
+    #song exists in DB 
+    if song :
+        return {"message":f"song with id {song['id']} already present"}, 302
+
     try:
-        db.songs.insert_one(inputData)
+        insertResult = db.songs.insert_one(inputData)
     except NameError:
         return ({"message": "Problem in adding data into collection"}, 500)
     
-    return ( {"message": inputData['oid'] }, 201)
+    return ( {"message": parse_json(insertResult.inserted_id) }, 201)
+
+
+
+##########################################################################
+# Ex5: Updating a song using PUT method
+##########################################################################
+@app.route("/song/<int:id>", methods=["PUT"])
+def update_song(id):
+    
+    # check if 
+    inputData=request.get_json()
+    if not inputData:
+        return ({"message": "INPUT JSON is problematic"}, 422)    
+    
+    result=db.songs.find_one({"id": id})
+    
+    if not result:
+        return ( {"message": f"song with id({id}) not found"}, 404)    
+    
+    try:
+        update_result = db.songs.update_one( {"id": id}, 
+            { '$set': { 'lyrics': inputData['lyrics'], 'title': inputData['title'] } 
+             })
+        
+    except NameError:
+        return ( {"message": "Internal server error"}, 500)    
+
+    if update_result.modified_count == 0:
+        return ( {"message": f"song ID ({id}) found, but nothing updated"}, 200)    
+    else:
+        return ( parse_json(db.songs.find_one({"id":id})), 201)
+    
+
+
+##########################################################################
+# Ex6: Delete a song using DELETE HTTP method
+##########################################################################
+@app.route("/song/<int:id>", methods=["DELETE"])
+def delete_song(id):
+          
+    result=db.songs.find_one({"id": id})
+    
+    if not result:
+        return ( {"message": f"song with id({id}) not found"}, 404)
+        
+    try:
+        update_result = db.songs.delete_one( {"id": id} )
+        
+    except NameError:
+        return ( {"message": "Internal server error"}, 500)
+    
+    if update_result.deleted_count == 0:
+        return ( {"message": "Nothing was deleted"}, 404)    
+    else:
+        return ({"message": f"Song id({id}) was deleted"}, 204)
