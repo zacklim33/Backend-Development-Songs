@@ -1,6 +1,6 @@
 from pymongo import MongoClient
-user = 'admin'
-password = 'user123_strong' # CHANGE THIS TO THE PASSWORD YOU NOTED IN THE EARLIER EXCERCISE - 2
+user = ''
+password = '' # CHANGE THIS TO THE PASSWORD YOU NOTED IN THE EARLIER EXCERCISE - 2
 host='127.0.0.1'
 
 """
